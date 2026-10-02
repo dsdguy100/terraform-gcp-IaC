@@ -23,17 +23,38 @@ resource "google_compute_subnetwork" "private" {
   private_ip_google_access = true
 }
 
+resource "google_compute_router" "shared" {
+  project = var.project_id
+  name    = "${var.network_name}-${var.region}-router"
+  region  = var.region
+  network = google_compute_network.shared.id
+}
+
+resource "google_compute_router_nat" "private" {
+  project                            = var.project_id
+  name                               = "${var.network_name}-${var.region}-private-nat"
+  router                             = google_compute_router.shared.name
+  region                             = var.region
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
+
+  subnetwork {
+    name                    = google_compute_subnetwork.private.id
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+  }
+}
+
 resource "google_compute_firewall" "web_ingress" {
   project       = var.project_id
   name          = "${var.network_name}-web-ingress"
   network       = google_compute_network.shared.id
   direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"]
+  source_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
   target_tags   = ["ecommerce-web"]
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "443"]
+    ports    = ["80"]
   }
 }
 
