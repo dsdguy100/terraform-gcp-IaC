@@ -72,22 +72,42 @@ Apply shared resources first, supplying the dev/prod SQL passwords through secur
 terraform -chdir=shared apply
 ```
 
-Build and push a tagged image after the shared apply creates the Artifact Registry repository. Run these commands from `terraform-gcp-IaC/` and replace the project/repository values as needed:
+### Build and publish the Docker image
+
+Run these commands from the `terraform-gcp-IaC/` directory after the shared apply has created the `ecommerce-app` repository. Docker Desktop (or another Docker Engine) must be running. The active `gcloud` identity needs `roles/artifactregistry.writer` on the repository. Use a new tag for each build so the MIG can roll out a changed image:
 
 ```powershell
-$image = "us-central1-docker.pkg.dev/fdm-tf-proj/ecommerce-app/flask-web:dev-001"
+$project = "fdm-tf-proj"
+$region = "us-central1"
+$repository = "ecommerce-app"
+$tag = Get-Date -Format "yyyyMMdd-HHmmss"
+$image = "${region}-docker.pkg.dev/$project/$repository/flask-web:$tag"
+
 gcloud auth configure-docker us-central1-docker.pkg.dev
-docker build -t $image .\app_python_mysql-main
+docker build --pull --tag $image --file .\app_python_mysql-main\Dockerfile .\app_python_mysql-main
 docker push $image
+
+gcloud artifacts docker images list us-central1-docker.pkg.dev/fdm-tf-proj/ecommerce-app --include-tags
 ```
 
-Create ignored `dev/terraform.tfvars` with `project_id`, `region`, `shared_state_bucket`, and the tagged `app_image`. The old `zone` value is optional and ignored by the regional MIG. Set `shared_state_bucket` to the same bucket used by the shared/dev backends; `shared_state_prefix` defaults to `terraform/shared`. Supply `flask_session_secret` through a secure variable source, then initialize dev with its existing separate prefix and apply:
+Confirm the image list includes `flask-web` with the new tag. Put that exact `$image` value in the ignored `dev/terraform.tfvars` as `app_image`; also set `project_id`, `region`, and `shared_state_bucket`. For example:
+
+```hcl
+project_id          = "fdm-tf-proj"
+region              = "us-central1"
+shared_state_bucket = "app-log-bucket"
+app_image           = "us-central1-docker.pkg.dev/fdm-tf-proj/ecommerce-app/flask-web:replace-with-the-tag-you-built"
+```
+
+The old `zone` value is optional and ignored by the regional MIG. `shared_state_prefix` defaults to `terraform/shared`. Supply `flask_session_secret` through a secure variable source, then initialize dev with its existing separate prefix, review the plan, and apply:
 
 ```powershell
 terraform -chdir=dev init -backend-config="bucket=your-unique-app-logs-bucket" -backend-config="prefix=terraform/dev"
 terraform -chdir=dev plan
 terraform -chdir=dev apply
 ```
+
+For a later app release, build and push a new unique tag, update only the `app_image` value in `dev/terraform.tfvars`, then run `terraform -chdir=dev plan` and `terraform -chdir=dev apply`. Terraform updates the instance template/MIG to use the new artifact; wait for the new instance to pass its health check before considering the rollout complete.
 
 The dev root reads outputs from the shared GCS state; it does not create a second VPC or SQL instance. After startup and load-balancer provisioning, run `terraform -chdir=dev output load_balancer_url` and open the returned URL. The reserved global address is also available as `load_balancer_ip`. Use disposable credentials only. Inspect startup output in the Compute Engine serial port logs; the instance startup script installs Docker and Google Cloud CLI, configures Artifact Registry authentication, and starts the tagged image. New instances may take several minutes to become healthy while packages are installed and the app connects to Cloud SQL. SSH is not opened by this configuration. Rebuild and push a new image tag before changing `app_image`.
 
