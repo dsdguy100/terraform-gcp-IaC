@@ -3,24 +3,35 @@ output "bucket_names" {
   value       = module.shared_storage.bucket_names
 }
 
-output "service_account_emails" {
-  description = "Email addresses of the storage access service accounts."
-  value       = module.shared_storage.service_account_emails
-}
-
 output "storage_buckets" {
   description = "Configuration and identifiers for all managed Cloud Storage buckets."
   value       = module.shared_storage.storage_buckets
 }
 
-output "storage_service_accounts" {
-  description = "Identity metadata for all managed storage service accounts."
-  value       = module.shared_storage.storage_service_accounts
+output "terraform_state_bucket_name" {
+  description = "Dedicated GCS bucket for Terraform state; access is restricted to operators."
+  value       = google_storage_bucket.terraform_state.name
 }
 
-output "storage_bucket_iam" {
-  description = "Explicit service-account IAM grants on managed Cloud Storage buckets."
-  value       = module.shared_storage.storage_bucket_iam
+output "human_iam_groups" {
+  description = "Organization-managed human groups and their configured GCP access scopes."
+  value = {
+    developers = {
+      email = var.developer_group_email
+      role  = google_artifact_registry_repository_iam_member.developers.role
+      scope = google_artifact_registry_repository.app.id
+    }
+    cloud_readonly = {
+      email = var.cloud_readonly_group_email
+      role  = google_project_iam_member.cloud_readonly.role
+      scope = var.project_id
+    }
+    terraform_state_operators = {
+      email = var.terraform_state_operator_group_email
+      role  = google_storage_bucket_iam_member.terraform_state_operators.role
+      scope = google_storage_bucket.terraform_state.name
+    }
+  }
 }
 
 output "vpc_name" {

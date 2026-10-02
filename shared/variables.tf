@@ -27,6 +27,41 @@ variable "bucket_names" {
   }
 }
 
+variable "terraform_state_bucket_name" {
+  description = "Globally unique name for the dedicated Terraform state bucket."
+  type        = string
+}
+
+variable "developer_group_email" {
+  description = "Existing Google Group for Ibrahim, Ron, and Sandip."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.developer_group_email))
+    error_message = "developer_group_email must be a valid Google Group email address."
+  }
+}
+
+variable "cloud_readonly_group_email" {
+  description = "Existing Google Group for Klaudio and Teyfik, limited to browsing the project hierarchy."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.cloud_readonly_group_email))
+    error_message = "cloud_readonly_group_email must be a valid Google Group email address."
+  }
+}
+
+variable "terraform_state_operator_group_email" {
+  description = "Existing Google Group of operators permitted to access Terraform state objects."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.terraform_state_operator_group_email))
+    error_message = "terraform_state_operator_group_email must be a valid Google Group email address."
+  }
+}
+
 variable "network_name" {
   description = "Name of the shared custom VPC."
   type        = string

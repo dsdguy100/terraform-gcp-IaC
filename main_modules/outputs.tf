@@ -3,11 +3,6 @@ output "bucket_names" {
   value       = { for key, bucket in google_storage_bucket.app : key => bucket.name }
 }
 
-output "service_account_emails" {
-  description = "Email addresses of the storage access service accounts."
-  value       = { for key, account in google_service_account.user : key => account.email }
-}
-
 output "storage_buckets" {
   description = "Configuration and identifiers for all managed Cloud Storage buckets."
   value = {
@@ -25,29 +20,6 @@ output "storage_buckets" {
   }
 }
 
-output "storage_service_accounts" {
-  description = "Identity metadata for all managed storage service accounts."
-  value = {
-    for key, account in google_service_account.user : key => {
-      account_id   = account.account_id
-      display_name = account.display_name
-      email        = account.email
-      unique_id    = account.unique_id
-    }
-  }
-}
-
-output "storage_bucket_iam" {
-  description = "Explicit service-account IAM grants on managed Cloud Storage buckets."
-  value = {
-    for key, grant in google_storage_bucket_iam_member.user_access : key => {
-      id     = grant.id
-      bucket = grant.bucket
-      member = grant.member
-      role   = grant.role
-    }
-  }
-}
 # o Endpoint of ALB DNS
 # o EC2 instances
 # o All S3 buckets name

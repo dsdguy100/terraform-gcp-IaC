@@ -28,6 +28,34 @@ module "shared_storage" {
   depends_on = [google_project_service.required]
 }
 
+resource "google_storage_bucket" "terraform_state" {
+  project                     = var.project_id
+  name                        = var.terraform_state_bucket_name
+  location                    = var.location
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  force_destroy               = false
+
+  versioning {
+    enabled = true
+  }
+
+  lifecycle {
+    prevent_destroy = true
+
+    precondition {
+      condition     = !contains(values(var.bucket_names), var.terraform_state_bucket_name)
+      error_message = "The Terraform state bucket must have a unique name separate from the application buckets."
+    }
+  }
+}
+
+resource "google_storage_bucket_iam_member" "terraform_state_operators" {
+  bucket = google_storage_bucket.terraform_state.name
+  role   = "roles/storage.objectAdmin"
+  member = "group:${var.terraform_state_operator_group_email}"
+}
+
 module "network_database" {
   source = "../network_database"
 
@@ -49,6 +77,20 @@ resource "google_artifact_registry_repository" "app" {
   format        = "DOCKER"
 
   depends_on = [google_project_service.required]
+}
+
+resource "google_artifact_registry_repository_iam_member" "developers" {
+  project    = var.project_id
+  location   = var.region
+  repository = google_artifact_registry_repository.app.repository_id
+  role       = "roles/artifactregistry.writer"
+  member     = "group:${var.developer_group_email}"
+}
+
+resource "google_project_iam_member" "cloud_readonly" {
+  project = var.project_id
+  role    = "roles/browser"
+  member  = "group:${var.cloud_readonly_group_email}"
 }
 
 resource "google_secret_manager_secret" "dev_database_password" {
