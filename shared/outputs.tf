@@ -27,3 +27,18 @@ output "database_connection" {
   description = "Private Cloud SQL connection details and logical database/user names."
   value       = module.network_database.database_connection
 }
+
+output "artifact_registry_repository_id" {
+  description = "Fully qualified Artifact Registry repository ID."
+  value       = google_artifact_registry_repository.app.id
+}
+
+output "artifact_registry_repository_url" {
+  description = "Docker image base URL for the shared Artifact Registry repository."
+  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.app.repository_id}"
+}
+
+output "dev_database_password_secret_id" {
+  description = "Secret Manager resource ID for the dev database password."
+  value       = google_secret_manager_secret.dev_database_password.id
+}

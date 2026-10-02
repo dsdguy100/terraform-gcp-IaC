@@ -1,23 +1,46 @@
+import os
+import time
+
 import mysql.connector
-import boto3
+from google.cloud import secretmanager
 from flask import Flask, render_template, request, redirect, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key"  # Replace with a secure key
+project_id = os.environ["GOOGLE_CLOUD_PROJECT"]
+secret_client = secretmanager.SecretManagerServiceClient()
 
-# Retrieve MySQL password from AWS SSM
-ssm = boto3.client('ssm', region_name='us-east-1')
-parameter_name = "mysql_psw"
-response = ssm.get_parameter(Name=parameter_name, WithDecryption=True)
-mysql_password = response['Parameter']['Value']
 
-# Connect to MySQL
-db_connection = mysql.connector.connect(
-    host="database_endpoint",  # Replace with your DB endpoint
-    user="admin",
-    password=mysql_password,
-    database="test"
-)
+def read_secret(secret_id):
+    if secret_id.startswith("projects/"):
+        version_name = f"{secret_id}/versions/latest"
+    else:
+        version_name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+    response = secret_client.access_secret_version(request={"name": version_name})
+    return response.payload.data.decode("utf-8")
+
+app.secret_key = read_secret(os.environ["FLASK_SESSION_SECRET_ID"])
+
+
+def connect_to_database():
+    connection_args = {
+        "host": os.environ["DB_HOST"],
+        "user": os.environ["DB_USER"],
+        "password": read_secret(os.environ["DB_PASSWORD_SECRET_ID"]),
+        "database": os.environ["DB_NAME"],
+        "connection_timeout": 10,
+    }
+
+    for attempt in range(30):
+        try:
+            return mysql.connector.connect(**connection_args)
+        except mysql.connector.Error:
+            if attempt == 29:
+                raise
+            time.sleep(5)
+
+
+db_connection = connect_to_database()
 db_cursor = db_connection.cursor()
 
 # Create users table
@@ -48,7 +71,7 @@ def health_check():
 def signUp():
     if request.method == 'POST':
         username = request.form['username']
-        password = request.form['password']
+        password = generate_password_hash(request.form['password'])
 
         db_cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
         db_connection.commit()
@@ -62,10 +85,10 @@ def signin():
         username = request.form['username']
         password = request.form['password']
 
-        db_cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
+        db_cursor.execute("SELECT id, password FROM users WHERE username = %s", (username,))
         user = db_cursor.fetchone()
 
-        if user:
+        if user and check_password_hash(user[1], password):
             session['user_id'] = user[0]
             return redirect(url_for('dashboard'))
 

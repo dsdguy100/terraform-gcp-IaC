@@ -9,6 +9,8 @@ resource "google_project_service" "required" {
     "compute.googleapis.com",
     "sqladmin.googleapis.com",
     "servicenetworking.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "secretmanager.googleapis.com",
   ])
 
   project            = var.project_id
@@ -38,4 +40,29 @@ module "network_database" {
   prod_database_password = var.prod_database_password
 
   depends_on = [google_project_service.required]
+}
+
+resource "google_artifact_registry_repository" "app" {
+  project       = var.project_id
+  location      = var.region
+  repository_id = var.artifact_registry_repository
+  format        = "DOCKER"
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_secret_manager_secret" "dev_database_password" {
+  project   = var.project_id
+  secret_id = "ecommerce-dev-db-password"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_secret_manager_secret_version" "dev_database_password" {
+  secret      = google_secret_manager_secret.dev_database_password.id
+  secret_data = var.dev_database_password
 }

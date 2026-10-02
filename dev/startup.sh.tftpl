@@ -1,0 +1,32 @@
+#!/bin/bash
+set -euo pipefail
+
+if ! command -v docker >/dev/null 2>&1 || ! command -v gcloud >/dev/null 2>&1; then
+  apt-get update
+  apt-get install -y ca-certificates curl gnupg
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg -o /tmp/google-cloud-apt-key.gpg
+  gpg --dearmor -o /etc/apt/keyrings/google-cloud.gpg /tmp/google-cloud-apt-key.gpg
+  chmod a+r /etc/apt/keyrings/google-cloud.gpg
+  echo "deb [signed-by=/etc/apt/keyrings/google-cloud.gpg] https://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list
+  apt-get update
+  apt-get install -y docker.io google-cloud-cli
+fi
+
+systemctl enable --now docker
+gcloud auth configure-docker ${registry_host} --quiet
+
+app_image='${app_image}'
+for attempt in $(seq 1 20); do
+  if docker pull "$app_image"; then
+    break
+  fi
+  if [ "$attempt" -eq 20 ]; then
+    echo "Unable to pull application image: $app_image" >&2
+    exit 1
+  fi
+  sleep 15
+done
+
+docker rm -f ecommerce-web >/dev/null 2>&1 || true
+docker run --detach --name ecommerce-web --restart unless-stopped --publish 80:5000 --env GOOGLE_CLOUD_PROJECT='${project_id}' --env DB_HOST='${database_host}' --env DB_USER='ecommerce_dev' --env DB_NAME='ecommerce_dev' --env DB_PASSWORD_SECRET_ID='${database_password_secret}' --env FLASK_SESSION_SECRET_ID='${flask_session_secret}' "$app_image"

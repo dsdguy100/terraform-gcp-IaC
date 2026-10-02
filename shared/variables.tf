@@ -45,6 +45,12 @@ variable "sql_tier" {
   default     = "db-custom-1-3840"
 }
 
+variable "artifact_registry_repository" {
+  description = "Artifact Registry Docker repository for application images."
+  type        = string
+  default     = "ecommerce-app"
+}
+
 variable "dev_database_password" {
   description = "Password for the ecommerce_dev database user. Supply through a secure variable source."
   type        = string
