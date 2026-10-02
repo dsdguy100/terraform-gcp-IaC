@@ -7,22 +7,27 @@ locals {
 
   users = {
     ibrahim = {
+      account_id   = "ecom-ibrahim"
       display_name = "Ibrahim"
       role         = "roles/storage.admin"
     }
     ron = {
+      account_id   = "ecom-ron"
       display_name = "Ron"
       role         = "roles/storage.objectViewer"
     }
     sandip = {
+      account_id   = "ecom-sandip"
       display_name = "Sandip"
       role         = "roles/storage.objectViewer"
     }
     klaudio = {
+      account_id   = "ecom-klaudio"
       display_name = "Klaudio"
       role         = "roles/storage.objectUser"
     }
     teyfik = {
+      account_id   = "ecom-teyfik"
       display_name = "Teyfik"
       role         = "roles/storage.objectUser"
     }
@@ -56,7 +61,7 @@ resource "google_service_account" "user" {
   for_each = local.users
 
   project      = var.project_id
-  account_id   = each.key
+  account_id   = each.value.account_id
   display_name = each.value.display_name
   description  = "Storage access identity for ${each.value.display_name}"
 }
