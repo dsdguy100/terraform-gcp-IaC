@@ -94,3 +94,8 @@ output "dev_database_password_secret_id" {
   description = "Secret Manager resource ID for the dev database password."
   value       = google_secret_manager_secret.dev_database_password.id
 }
+
+output "prod_database_password_secret_id" {
+  description = "Secret Manager resource ID for the prod database password."
+  value       = google_secret_manager_secret.prod_database_password.id
+}

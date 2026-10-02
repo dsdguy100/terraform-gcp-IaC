@@ -29,4 +29,4 @@ for attempt in $(seq 1 20); do
 done
 
 docker rm -f ecommerce-web >/dev/null 2>&1 || true
-docker run --detach --name ecommerce-web --restart unless-stopped --publish 80:5000 --env GOOGLE_CLOUD_PROJECT='${project_id}' --env DB_HOST='${database_host}' --env DB_USER='ecommerce_dev' --env DB_NAME='ecommerce_dev' --env DB_PASSWORD_SECRET_ID='${database_password_secret}' --env FLASK_SESSION_SECRET_ID='${flask_session_secret}' "$app_image"
+docker run --detach --name ecommerce-web --restart unless-stopped --publish 80:5000 --env GOOGLE_CLOUD_PROJECT='${project_id}' --env DB_HOST='${database_host}' --env DB_USER='${database_user}' --env DB_NAME='${database_name}' --env DB_PASSWORD_SECRET_ID='${database_password_secret}' --env FLASK_SESSION_SECRET_ID='${flask_session_secret}' "$app_image"

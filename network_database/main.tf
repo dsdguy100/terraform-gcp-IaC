@@ -58,6 +58,20 @@ resource "google_compute_firewall" "web_ingress" {
   }
 }
 
+resource "google_compute_firewall" "prod_web_ingress" {
+  project       = var.project_id
+  name          = "${var.network_name}-prod-web-ingress"
+  network       = google_compute_network.shared.id
+  direction     = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["ecommerce-prod-web"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80"]
+  }
+}
+
 resource "google_compute_global_address" "private_services" {
   project       = var.project_id
   name          = "${var.network_name}-private-services"

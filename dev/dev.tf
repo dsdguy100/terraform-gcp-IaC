@@ -99,7 +99,9 @@ resource "google_compute_instance_template" "app" {
   metadata_startup_script = templatefile("${path.module}/startup.sh.tftpl", {
     app_image                = var.app_image
     database_host            = data.terraform_remote_state.shared.outputs.database_connection.private_ip
+    database_name            = "ecommerce_dev"
     database_password_secret = data.terraform_remote_state.shared.outputs.dev_database_password_secret_id
+    database_user            = "ecommerce_dev"
     flask_session_secret     = google_secret_manager_secret.flask_session.secret_id
     project_id               = var.project_id
     registry_host            = "${var.region}-docker.pkg.dev"

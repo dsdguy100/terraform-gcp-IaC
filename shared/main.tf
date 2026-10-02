@@ -66,3 +66,19 @@ resource "google_secret_manager_secret_version" "dev_database_password" {
   secret      = google_secret_manager_secret.dev_database_password.id
   secret_data = var.dev_database_password
 }
+
+resource "google_secret_manager_secret" "prod_database_password" {
+  project   = var.project_id
+  secret_id = "ecommerce-prod-db-password"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_secret_manager_secret_version" "prod_database_password" {
+  secret      = google_secret_manager_secret.prod_database_password.id
+  secret_data = var.prod_database_password
+}
