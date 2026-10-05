@@ -8,29 +8,12 @@ output "storage_buckets" {
   value       = module.shared_storage.storage_buckets
 }
 
-output "terraform_state_bucket_name" {
-  description = "Dedicated GCS bucket for Terraform state; access is restricted to operators."
-  value       = google_storage_bucket.terraform_state.name
-}
-
-output "human_iam_groups" {
-  description = "Organization-managed human groups and their configured GCP access scopes."
+output "cloud_readonly_iam" {
+  description = "Klaudio's project hierarchy-browsing role assignment."
   value = {
-    developers = {
-      email = var.developer_group_email
-      role  = google_artifact_registry_repository_iam_member.developers.role
-      scope = google_artifact_registry_repository.app.id
-    }
-    cloud_readonly = {
-      email = var.cloud_readonly_group_email
-      role  = google_project_iam_member.cloud_readonly.role
-      scope = var.project_id
-    }
-    terraform_state_operators = {
-      email = var.terraform_state_operator_group_email
-      role  = google_storage_bucket_iam_member.terraform_state_operators.role
-      scope = google_storage_bucket.terraform_state.name
-    }
+    user  = var.cloud_readonly_user_email
+    role  = "roles/browser"
+    scope = var.project_id
   }
 }
 
