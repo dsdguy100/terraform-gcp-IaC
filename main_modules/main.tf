@@ -6,25 +6,10 @@ locals {
   }
 }
 
-# resource "google_storage_bucket" "app" {
-#   for_each = local.bucket_names
-
-#   name                        = each.value
-#   project                     = var.project_id
-#   location                    = var.location
-#   uniform_bucket_level_access = true
-#   public_access_prevention    = "enforced"
-#   force_destroy               = false
-
-#   versioning {
-#     enabled = true
-#   }
-# }
-
 resource "google_storage_bucket" "app" {
-  count = length(local.bucket_names)
+  for_each = local.bucket_names
 
-  name                        = local.bucket_names[count.index]
+  name                        = each.value
   project                     = var.project_id
   location                    = var.location
   uniform_bucket_level_access = true
@@ -35,3 +20,18 @@ resource "google_storage_bucket" "app" {
     enabled = true
   }
 }
+
+# resource "google_storage_bucket" "app" {
+#   count = length(local.bucket_names)
+
+#   name                        = local.bucket_names[count.index]
+#   project                     = var.project_id
+#   location                    = var.location
+#   uniform_bucket_level_access = true
+#   public_access_prevention    = "enforced"
+#   force_destroy               = false
+
+#   versioning {
+#     enabled = true
+#   }
+# }
